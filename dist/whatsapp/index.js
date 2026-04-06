@@ -67,6 +67,7 @@ class Whatsapp {
             const { version } = yield (0, baileys_1.fetchLatestBaileysVersion)();
             const startSocket = () => __awaiter(this, void 0, void 0, function* () {
                 var _a;
+                const shouldPrintQrInTerminal = typeof (socket === null || socket === void 0 ? void 0 : socket.onQr) !== "function";
                 const { state, saveCreds } = yield (0, baileys_1.useMultiFileAuthState)(path_1.default.resolve(Defaults_1.CREDENTIALS.DIR_NAME, socket.id + "_" + socket.phoneNumber + Defaults_1.CREDENTIALS.SUFFIX));
                 const sock = (0, baileys_1.default)({
                     version,
@@ -76,6 +77,8 @@ class Whatsapp {
                     },
                     logger,
                     markOnlineOnConnect: false,
+                    printQRInTerminal: shouldPrintQrInTerminal,
+                    patchMessageBeforeSending: baileys_1.patchMessageForMdIfRequired || ((message) => message),
                     browser: baileys_1.Browsers.ubuntu("Chrome"),
                 });
                 socket.socket = sock;
@@ -197,10 +200,3 @@ class Whatsapp {
     }
 }
 exports.Whatsapp = Whatsapp;
-const wa = new Whatsapp();
-// wa.load();
-const mySocket = new Socket_1.Socket({ id: "mysocket", phoneNumber: "6281524538841" });
-mySocket.onPairing = (code) => {
-    console.log(code);
-};
-wa.startSession(mySocket);

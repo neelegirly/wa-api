@@ -214,13 +214,15 @@ const startSession = (sessionId = "mysession", options = { printQR: true }) => _
     const logger = (0, pino_1.default)({ level: "silent" });
     const { version } = yield (0, baileys_1.fetchLatestBaileysVersion)();
     const startSocket = () => __awaiter(void 0, void 0, void 0, function* () {
+        const shouldPrintQrInTerminal = Boolean(options.printQR) && !callback.get(Defaults_1.CALLBACK_KEY.ON_QR);
         const { state, saveCreds } = yield (0, baileys_1.useMultiFileAuthState)(path_1.default.resolve(Defaults_1.CREDENTIALS.DIR_NAME, sessionId + Defaults_1.CREDENTIALS.SUFFIX));
         const sock = (0, baileys_1.default)({
             version,
-            printQRInTerminal: options.printQR,
+            printQRInTerminal: shouldPrintQrInTerminal,
             auth: createSocketAuthState(state, logger),
             logger,
             markOnlineOnConnect: false,
+            patchMessageBeforeSending: baileys_1.patchMessageForMdIfRequired || ((message) => message),
             browser: baileys_1.Browsers.ubuntu("Chrome"),
         });
         sessions.set(sessionId, Object.assign({}, sock));
@@ -299,10 +301,11 @@ const onimaii = (sessionId = "mysession", connect) => __awaiter(void 0, void 0, 
                 throw new Error_1.WhatsappError(Defaults_1.Messages.sessionAlreadyExist(sessionId));
             const logger = (0, pino_1.default)({ level: "silent" });
             const { version } = yield (0, baileys_1.fetchLatestBaileysVersion)();
+                const shouldPrintQrInTerminal = !callback.get(Defaults_1.CALLBACK_KEY.ON_QR);
                 const { state, saveCreds } = yield (0, baileys_1.useMultiFileAuthState)(path_1.default.resolve(Defaults_1.CREDENTIALS.DIR_NAME, sessionId + Defaults_1.CREDENTIALS.SUFFIX));
                 const sock = (0, connect)({
                     version,
-                    printQRInTerminal: true,
+                    printQRInTerminal: shouldPrintQrInTerminal,
                     auth: createSocketAuthState(state, logger),
                     logger,
                     markOnlineOnConnect: false,
@@ -327,6 +330,7 @@ var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
               auth: createSocketAuthState(state, logger),
               logger,
               markOnlineOnConnect: false,
+              patchMessageBeforeSending: baileys_1.patchMessageForMdIfRequired || ((message) => message),
               browser: baileys_1.Browsers.ubuntu("Chrome"),
           });
      sessions.set(sessionId, { ...sock });
