@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.onPairingCode = exports.onMessageUpdate = exports.onConnecting = exports.onDisconnected = exports.onConnected = exports.onQRUpdated = exports.onMessageReceived = exports.loadSessionsFromStorage = exports.getSession = exports.getAllSession = exports.deleteSession = exports.startWhatsapp = exports.startSession = void 0;
-const baileys_1 = __importStar(require("@neelify/baileys"));
+const baileys_1 = __importStar(require("@neelegirly/baileys"));
 const pino_1 = __importDefault(require("pino"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
@@ -146,27 +146,28 @@ const fetchLatestWaApiVersion = () => __awaiter(void 0, void 0, void 0, function
     return null;
 });
 const resolveBaileysVersion = () => {
-    var _a;
-    try {
-        const pkg = require("@neelify/baileys/package.json");
-        return ((_a = pkg === null || pkg === void 0 ? void 0 : pkg.version) !== null && _a !== void 0 ? _a : null) || null;
+    const candidates = ["@neelegirly/baileys/package.json"];
+    for (const candidate of candidates) {
+        try {
+            const pkg = require(candidate);
+            return ((pkg === null || pkg === void 0 ? void 0 : pkg.version) || null) || null;
+        }
+        catch (_error) { }
     }
-    catch (_error) {
-        return null;
-    }
+    return null;
 };
 const applyQrBrandContext = (updateInfo) => {
-    process.env.NEELIFY_WRAPPER_PACKAGE = "@neelegirly/wa-api";
-    process.env.NEELIFY_WRAPPER_VERSION = CURRENT_WA_API_VERSION;
+    process.env.NEELEGIRLY_WRAPPER_PACKAGE = "@neelegirly/wa-api";
+    process.env.NEELEGIRLY_WRAPPER_VERSION = CURRENT_WA_API_VERSION;
     if (updateInfo === null || updateInfo === void 0 ? void 0 : updateInfo.hasUpdate) {
-        process.env.NEELIFY_WRAPPER_UPDATE = updateInfo.latest;
+        process.env.NEELEGIRLY_WRAPPER_UPDATE = updateInfo.latest;
     }
     else {
-        delete process.env.NEELIFY_WRAPPER_UPDATE;
+        delete process.env.NEELEGIRLY_WRAPPER_UPDATE;
     }
     const baileysVersion = resolveBaileysVersion();
     if (baileysVersion) {
-        process.env.NEELIFY_BAILEYS_VERSION = baileysVersion;
+        process.env.NEELEGIRLY_BAILEYS_VERSION = baileysVersion;
     }
 };
 const checkWaApiUpdate = () => {
