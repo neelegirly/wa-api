@@ -78,6 +78,7 @@ class Whatsapp {
                     },
                     logger,
                     markOnlineOnConnect: false,
+                    patchMessageBeforeSending: baileys_1.patchMessageForMdIfRequired,
                     browser: baileys_1.Browsers.ubuntu("Chrome"),
                 });
                 socket.socket = sock;

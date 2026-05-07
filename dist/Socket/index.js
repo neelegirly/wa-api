@@ -810,6 +810,7 @@ const openSessionRuntime = async (sessionId, options = {}, mode = "qr", runtimeO
         auth: createSocketAuthState(authState.state, logger),
         logger,
         markOnlineOnConnect: false,
+        patchMessageBeforeSending: baileys.patchMessageForMdIfRequired,
         browser: startOptions.browser || baileys.Browsers.ubuntu("Chrome")
     });
     const control = {
