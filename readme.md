@@ -1,3 +1,57 @@
+<pre align="center">
+💖 Neelegirly Ecosystem Clean Stability Update 💖
+4 Packages · 1 App · PM2 only runs the app
+</pre>
+
+# 💌 @neelegirly/wa-api
+
+Session manager layer for QR, pairing code, reconnect, and multi-session apps.
+
+## Clean Architecture
+
+```text
+@neelegirly/libsignal
+        ↓
+@neelegirly/baileys
+        ↓
+@neelegirly/wa-api
+        ↓
+App (PM2 managed)
+        ↓
+@neelegirly/downloader (optional utility)
+```
+
+## Official Package Role
+
+- WA-API handles sessions internally
+- PM2 should only run the app
+- No PM2 process per session
+
+## PM2 Rule
+
+> WA-API handles sessions internally. PM2 only runs the app.
+
+Start your app with PM2 like this:
+
+```bash
+pm2 start index.js --name bot
+```
+
+Do not start one PM2 process per session. Sessions belong inside the app through `@neelegirly/wa-api`.
+
+## Install
+
+```bash
+npm install @neelegirly/wa-api
+```
+
+## Clean Stability Release
+
+This release clarifies the ecosystem structure and removes workspace/core confusion from the documentation.
+
+
+---
+
 <div align="center">
 
 # 💌 @neelegirly/wa-api 💌
