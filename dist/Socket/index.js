@@ -152,6 +152,12 @@ const resolveBaileysPackageMeta = () => {
         version: String(pkg.version || "").trim() || null
     };
 };
+// Honest WhatsApp-Web baseline the fork ships/handshakes with (e.g. "2.3000.1035194821").
+const resolveWaWebBaseline = () => {
+    const meta = readPackageMeta("@neelegirly/baileys/lib/Defaults/baileys-version.json", null);
+    const version = meta && Array.isArray(meta.version) ? meta.version : null;
+    return version ? version.join(".") : null;
+};
 const getCredentialRootDirectories = () => {
     try {
         const dirs = typeof session_paths_1.getCredentialRootDirectories === "function"
@@ -176,6 +182,47 @@ const normalizePm2Name = (value, fallbackSessionId) => {
 };
 const hasCredentialFiles = (credentialDirectory) => {
     try {
+        // OniSelf SQLite Patch: also accept sibling <sessionId>.db file.
+        // resolveCredentialDirectory returns "<root>/<sessionId><suffix>" (e.g.
+        // "/sessions_neelegirly/OniSelf_neelegirly.json"). The SQLite backend
+        // stores the entire session as "<root>/<sessionId>.db" instead.
+        try {
+            const __parts = require("path").parse(credentialDirectory);
+            const __dbPath = require("path").join(__parts.dir, __parts.name + ".db");
+            if (fs.existsSync(__dbPath) && fs.statSync(__dbPath).size > 1024) {
+                return true;
+            }
+        } catch (_) { /* fall through to legacy check */ }
+
+        // OniSelf SQLite central DB check: check if the session is recorded in sessionStore.db
+        try {
+            const __parts = require("path").parse(credentialDirectory);
+            const __centralDbPath = require("path").join(__parts.dir, 'sessionStore.db');
+            if (fs.existsSync(__centralDbPath)) {
+                const Database = require('better-sqlite3');
+                const db = new Database(__centralDbPath, { readonly: true });
+                try {
+                    const sessionId = __parts.name;
+                    const SUFFIX = '_neelegirly';
+                    const candidates = sessionId.endsWith(SUFFIX)
+                        ? [sessionId, sessionId.slice(0, -SUFFIX.length)]
+                        : [sessionId, sessionId + SUFFIX];
+                    const stmt = db.prepare('SELECT creds FROM session_store WHERE sessionId = ?');
+                    for (const c of candidates) {
+                        const row = stmt.get(c);
+                        if (row && row.creds) {
+                            const creds = JSON.parse(row.creds);
+                            if (creds && creds.me && creds.me.id) {
+                                return true;
+                            }
+                        }
+                    }
+                } finally {
+                    db.close();
+                }
+            }
+        } catch (_) {}
+
         return fs.existsSync(credentialDirectory)
             && fs.lstatSync(credentialDirectory).isDirectory()
             && fs.readdirSync(credentialDirectory).length > 0;
@@ -558,9 +605,13 @@ const logUpdateSummaryOnce = async () => {
     if (!snapshot) {
         return;
     }
+    const waWebBaseline = resolveWaWebBaseline();
     printPanel("🌸 Neelegirly Update Notify", [
         summarizeUpdate(WA_API_PACKAGE_NAME, snapshot.waApi),
-        summarizeUpdate("@neelegirly/baileys", snapshot.baileys)
+        summarizeUpdate("@neelegirly/baileys", snapshot.baileys),
+        waWebBaseline
+            ? `🌐 WhatsApp-Web-Baseline ${waWebBaseline} · Baileys-kompatibel · QR/Pair self-healing`
+            : null
     ]);
 };
 const normalizeStartOptions = (record, options = {}) => ({
@@ -789,7 +840,22 @@ const openSessionRuntime = async (sessionId, options = {}, mode = "qr", runtimeO
     const startOptions = normalizeStartOptions(currentRecord, options);
     const logger = createLogger();
     const credentialDirectory = (0, session_paths_1.resolveCredentialDirectory)(id, { create: true, migrateLegacy: true });
-    const authState = await baileys.useMultiFileAuthState(credentialDirectory);
+    // ╭─ OniSelf SQLite Auth-State Patch ──────────────────────────────╮
+    // │  Active path for wa-api 1.8.8 `openSessionRuntime` flow.       │
+    // │  Routes ALL session auth through a single <id>.db file in the  │
+    // │  sessions root. Falls back to baileys' multi-file backend if   │
+    // │  the SQLite module is unavailable.                             │
+    // ╰────────────────────────────────────────────────────────────────╯
+    let authState;
+    try {
+        const __parts   = require("path").parse(credentialDirectory);
+        const __dbPath  = require("path").join(__parts.dir, __parts.name + ".db");
+        const { useSqliteAuthState } = require("/root/OniSelf/src/sessions/sqlite-auth-state.js");
+        const __sqlite  = await useSqliteAuthState(__dbPath);
+        authState = { state: __sqlite.state, saveCreds: __sqlite.saveCreds };
+    } catch (__sqliteErr) {
+        authState = await baileys.useMultiFileAuthState(credentialDirectory);
+    }
     if (mode === "pairing" && !authState.state.creds.registered && !startOptions.phoneNumber) {
         if (!hasCredentialFiles(credentialDirectory)) {
             try {

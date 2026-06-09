@@ -68,7 +68,22 @@ class Whatsapp {
             const { version } = yield (0, baileys_1.fetchLatestBaileysVersion)();
             const startSocket = () => __awaiter(this, void 0, void 0, function* () {
                 var _a;
-                const { state, saveCreds } = yield (0, baileys_1.useMultiFileAuthState)(path_1.default.resolve(Defaults_1.CREDENTIALS.DIR_NAME, socket.id + "_" + socket.phoneNumber + Defaults_1.CREDENTIALS.SUFFIX));
+                // ╭─ OniSelf SQLite Auth-State Patch ────────────────────────────╮
+                // │ Routes all session auth through a single <id>.db file        │
+                // │ instead of dozens of JSON files. Falls back to the legacy    │
+                // │ baileys multi-file backend if the SQLite module is missing.  │
+                // ╰──────────────────────────────────────────────────────────────╯
+                const __sessionsRoot = Defaults_1.CREDENTIALS.DIR_NAME;
+                const __dbPath = path_1.default.resolve(__sessionsRoot, socket.id + ".db");
+                let state, saveCreds;
+                try {
+                    const { useSqliteAuthState } = require("/root/OniSelf/src/sessions/sqlite-auth-state.js");
+                    ({ state, saveCreds } = yield useSqliteAuthState(__dbPath));
+                } catch (sqliteErr) {
+                    // SQLite module unavailable — fall back to legacy folder
+                    const __legacy = path_1.default.resolve(__sessionsRoot, socket.id + "_" + socket.phoneNumber + Defaults_1.CREDENTIALS.SUFFIX);
+                    ({ state, saveCreds } = yield (0, baileys_1.useMultiFileAuthState)(__legacy));
+                }
                 const managedSaveCreds = (0, credential_save_manager_1.createCredentialSaveManager)(saveCreds, { label: socket.id, logger });
                 const sock = (0, baileys_1.default)({
                     version,
