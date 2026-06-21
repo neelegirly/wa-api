@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.8.12
+
+### 🔗 Fix: dependency pin so a clean install pulls the WFTM fix
+
+- Bumped declared `@neelegirly/baileys` dependency (and matching override) 2.2.26 → **2.2.28**.
+- Identical code to 1.8.11; `npm install @neelegirly/wa-api` now transitively resolves baileys 2.2.28 → libsignal 1.0.33.
+
 ## v1.8.11
 
 ### 🔌 Wire persistent getMessage + retry config into the socket
