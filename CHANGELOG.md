@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.8.11
+
+### 🔌 Wire persistent getMessage + retry config into the socket
+
+- The socket now passes `getMessage`, `msgRetryCounterCache` and `cachedGroupMetadata`
+  from `global.__neelegirlyWa` into Baileys, plus `maxMsgRetryCount: 5` and
+  `retryRequestDelayMs: 2000`.
+- Lets a host app supply a persistent plaintext store so incoming retry receipts can be
+  answered even after a restart — the wa-api side of the "Waiting for this message" fix
+  (pairs with baileys **2.2.27**'s `sendMessagesAgain` fallback).
+
 ## v1.8.10
 
 ### 🛠️ QR-/Pairing-Login-Fix + Modern Boot-Banner

@@ -870,6 +870,20 @@ const openSessionRuntime = async (sessionId, options = {}, mode = "qr", runtimeO
     const shouldPrintQrInTerminal = mode !== "pairing"
         && Boolean(startOptions.printQR)
         && !hasCallbackListeners(Defaults_1.CALLBACK_KEY.ON_QR);
+    // ╭─ OniSelf decrypt-retry wiring (Direction A resend + anti-loop) ───────╮
+    // │  Reads an OPTIONAL global registered by OniSelf's message-store.      │
+    // │  getMessage          → persistent plaintext store; lets Baileys       │
+    // │                        re-encrypt + resend on an incoming retry       │
+    // │                        receipt (recipient stuck on "Waiting for this  │
+    // │                        message"). Default `async()=>undefined` left   │
+    // │                        the recipient stuck forever.                   │
+    // │  msgRetryCounterCache → ONE shared cache so maxMsgRetryCount actually  │
+    // │                        bounds incoming-decrypt retries (no spam loop). │
+    // │  cachedGroupMetadata  → group participants for sender-key resends.     │
+    // │  If the global is absent (other consumer), all fall back to Baileys   │
+    // │  defaults — no regression.                                            │
+    // ╰───────────────────────────────────────────────────────────────────────╯
+    const __oniHooks = (typeof global !== "undefined" && global.__neelegirlyWa) || {};
     const sock = baileys.default({
         version: latestVersion.version,
         printQRInTerminal: shouldPrintQrInTerminal,
@@ -877,7 +891,12 @@ const openSessionRuntime = async (sessionId, options = {}, mode = "qr", runtimeO
         logger,
         markOnlineOnConnect: false,
         patchMessageBeforeSending: baileys.patchMessageForMdIfRequired,
-        browser: startOptions.browser || baileys.Browsers.ubuntu("Chrome")
+        browser: startOptions.browser || baileys.Browsers.ubuntu("Chrome"),
+        getMessage: __oniHooks.getMessage,
+        msgRetryCounterCache: __oniHooks.msgRetryCounterCache,
+        cachedGroupMetadata: __oniHooks.cachedGroupMetadata,
+        maxMsgRetryCount: 5,
+        retryRequestDelayMs: 2000
     });
     const control = {
         sessionId: id,
