@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.8.13
+
+### 🔗 Bump baileys dependency to 2.2.29 (device-change fix)
+
+- Declared `@neelegirly/baileys` dependency (and override) → **2.2.29** so a clean install pulls the instant device-change detection fix. Code identical to 1.8.12.
+
 ## v1.8.12
 
 ### 🔗 Fix: dependency pin so a clean install pulls the WFTM fix
