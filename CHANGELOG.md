@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.8.14
+
+### 🔗 baileys 2.2.31 (Message Recovery & Decryption Stability)
+
+- `@neelegirly/baileys` dependency + override → **2.2.31** (1.8.13 zeigte noch auf 2.2.29). 2.2.31 behebt die
+  Hauptursachen für dauerhaftes „Warte auf diese Nachricht" (Gerät beim Entschlüsseln, Retry-Adressierung, LID/PN).
+
+### 🧹 Kein fester Serverpfad mehr
+
+- `openSessionRuntime` und die Legacy-Klasse in `dist/whatsapp/index.js` versuchten
+  `require("/root/OniSelf/src/sessions/sqlite-auth-state.js")` — ein Pfad auf genau einem Rechner, der überall sonst still
+  fehlschlug. Ersetzt durch den optionalen Hook `global.__neelegirlyWa.useAuthState(credentialDirectory, { sessionId })`
+  → `{ state, saveCreds }`. Ohne Hook (oder wenn er fehlschlägt): baileys' Multi-File-Ablage wie bisher.
+
+### 📦 Frische Installation lief nicht
+
+- `dist/Messaging/index.js` lud `qrcode`, ohne es zu benutzen oder zu deklarieren → `Cannot find module 'qrcode'` bei
+  jedem frischen `npm i @neelegirly/wa-api`. Zeile entfernt. (`better-sqlite3` bleibt optional, nur in `try/catch`.)
+
+### ⏱️ QR-/Verbindungs-Zeitgrenzen durchreichbar
+
+- `global.__neelegirlyWa.qrTimeout` / `.connectTimeoutMs` werden an den Socket gereicht. Baileys gibt sonst nur dem
+  ersten QR-Code 60 s, jedem weiteren 20 s („QR refs attempts ended"). Ohne Hook: Baileys-Standard.
+
 ## v1.8.13
 
 ### 🔗 Bump baileys dependency to 2.2.29 (device-change fix)

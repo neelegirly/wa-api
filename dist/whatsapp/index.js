@@ -76,12 +76,15 @@ class Whatsapp {
                 const __sessionsRoot = Defaults_1.CREDENTIALS.DIR_NAME;
                 const __dbPath = path_1.default.resolve(__sessionsRoot, socket.id + ".db");
                 let state, saveCreds;
+                // 1.8.14: kein fester Serverpfad mehr (bis 1.8.13: /root/OniSelf/...).
+                // Eigene Ablage optional ueber global.__neelegirlyWa.useAuthState.
+                const __legacy = path_1.default.resolve(__sessionsRoot, socket.id + "_" + socket.phoneNumber + Defaults_1.CREDENTIALS.SUFFIX);
+                const __authHooks = (typeof global !== "undefined" && global.__neelegirlyWa) || {};
                 try {
-                    const { useSqliteAuthState } = require("/root/OniSelf/src/sessions/sqlite-auth-state.js");
-                    ({ state, saveCreds } = yield useSqliteAuthState(__dbPath));
-                } catch (sqliteErr) {
-                    // SQLite module unavailable — fall back to legacy folder
-                    const __legacy = path_1.default.resolve(__sessionsRoot, socket.id + "_" + socket.phoneNumber + Defaults_1.CREDENTIALS.SUFFIX);
+                    if (typeof __authHooks.useAuthState !== "function") throw new Error("kein useAuthState-Hook");
+                    ({ state, saveCreds } = yield __authHooks.useAuthState(__legacy, { sessionId: socket.id, dbPath: __dbPath }));
+                    if (!state || typeof saveCreds !== "function") throw new Error("useAuthState lieferte keinen Auth-State");
+                } catch (_authErr) {
                     ({ state, saveCreds } = yield (0, baileys_1.useMultiFileAuthState)(__legacy));
                 }
                 const managedSaveCreds = (0, credential_save_manager_1.createCredentialSaveManager)(saveCreds, { label: socket.id, logger });

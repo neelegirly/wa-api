@@ -840,20 +840,26 @@ const openSessionRuntime = async (sessionId, options = {}, mode = "qr", runtimeO
     const startOptions = normalizeStartOptions(currentRecord, options);
     const logger = createLogger();
     const credentialDirectory = (0, session_paths_1.resolveCredentialDirectory)(id, { create: true, migrateLegacy: true });
-    // ╭─ OniSelf SQLite Auth-State Patch ──────────────────────────────╮
-    // │  Active path for wa-api 1.8.8 `openSessionRuntime` flow.       │
-    // │  Routes ALL session auth through a single <id>.db file in the  │
-    // │  sessions root. Falls back to baileys' multi-file backend if   │
-    // │  the SQLite module is unavailable.                             │
+    // ╭─ Auth-State (1.8.14) ──────────────────────────────────────────╮
+    // │  Standard: baileys' Multi-File-Ablage im Credential-Ordner.     │
+    // │  Eigene Ablage optional ueber den Hook                          │
+    // │    global.__neelegirlyWa.useAuthState(credentialDirectory, ctx) │
+    // │  -> { state, saveCreds }. Bis 1.8.13 stand hier ein fester      │
+    // │  Serverpfad (/root/OniSelf/...), der ausserhalb dieses einen    │
+    // │  Rechners immer still fehlschlug.                               │
     // ╰────────────────────────────────────────────────────────────────╯
     let authState;
-    try {
-        const __parts   = require("path").parse(credentialDirectory);
-        const __dbPath  = require("path").join(__parts.dir, __parts.name + ".db");
-        const { useSqliteAuthState } = require("/root/OniSelf/src/sessions/sqlite-auth-state.js");
-        const __sqlite  = await useSqliteAuthState(__dbPath);
-        authState = { state: __sqlite.state, saveCreds: __sqlite.saveCreds };
-    } catch (__sqliteErr) {
+    const __authHooks = (typeof global !== "undefined" && global.__neelegirlyWa) || {};
+    if (typeof __authHooks.useAuthState === "function") {
+        try {
+            authState = await __authHooks.useAuthState(credentialDirectory, { sessionId: id });
+        }
+        catch (__authErr) {
+            console.warn("[wa-api] useAuthState-Hook fehlgeschlagen, nutze Dateiablage:", __authErr && __authErr.message);
+            authState = undefined;
+        }
+    }
+    if (!authState || !authState.state || typeof authState.saveCreds !== "function") {
         authState = await baileys.useMultiFileAuthState(credentialDirectory);
     }
     if (mode === "pairing" && !authState.state.creds.registered && !startOptions.phoneNumber) {
@@ -896,7 +902,12 @@ const openSessionRuntime = async (sessionId, options = {}, mode = "qr", runtimeO
         msgRetryCounterCache: __oniHooks.msgRetryCounterCache,
         cachedGroupMetadata: __oniHooks.cachedGroupMetadata,
         maxMsgRetryCount: 5,
-        retryRequestDelayMs: 2000
+        retryRequestDelayMs: 2000,
+        // QR-Lebensdauer + Verbindungs-Timeout optional ueber dieselben Hooks.
+        // Baileys gibt nur dem ERSTEN QR-Code 60 s, jedem weiteren 20 s; sind die
+        // "refs" aufgebraucht, endet die Verbindung mit "QR refs attempts ended".
+        ...(__oniHooks.qrTimeout ? { qrTimeout: __oniHooks.qrTimeout } : {}),
+        ...(__oniHooks.connectTimeoutMs ? { connectTimeoutMs: __oniHooks.connectTimeoutMs } : {})
     });
     const control = {
         sessionId: id,

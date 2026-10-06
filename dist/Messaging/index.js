@@ -31,7 +31,7 @@ const create_delay_1 = require("../Utils/create-delay");
 const is_exist_1 = require("../Utils/is-exist");
 const mime_1 = __importDefault(require("mime"));
 const Error_1 = require("../Error");
-const qrcode = require("qrcode")
+// 1.8.14: ungenutztes require("qrcode") entfernt — nicht deklariert, brach jede frische Installation ab
 
 const sessionCache = new Map();
 
