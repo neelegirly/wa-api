@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.8.15
+
+### 🔁 Fix: Retry-Anfragen ohne Hooks scheiterten immer
+
+- Seit 1.8.11 reichte `openSessionRuntime` `getMessage`, `msgRetryCounterCache` und `cachedGroupMetadata` aus
+  `global.__neelegirlyWa` IMMER an den Socket — auch als `undefined`, wenn kein Hook gesetzt war. Per Spread
+  überschrieb `getMessage: undefined` den Baileys-Standard `async () => undefined`; jede eingehende Retry-Anfrage
+  endete mit `getMessage is not a function`, der Empfänger blieb auf „Warte auf diese Nachricht“. Betraf jeden
+  Nutzer ohne eigene Hooks (im Feld: DarkBot). Jetzt werden nur gesetzte Hooks weitergereicht.
+
 ## v1.8.14
 
 ### 🔗 baileys 2.2.31 (Message Recovery & Decryption Stability)

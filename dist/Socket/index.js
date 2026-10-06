@@ -898,9 +898,12 @@ const openSessionRuntime = async (sessionId, options = {}, mode = "qr", runtimeO
         markOnlineOnConnect: false,
         patchMessageBeforeSending: baileys.patchMessageForMdIfRequired,
         browser: startOptions.browser || baileys.Browsers.ubuntu("Chrome"),
-        getMessage: __oniHooks.getMessage,
-        msgRetryCounterCache: __oniHooks.msgRetryCounterCache,
-        cachedGroupMetadata: __oniHooks.cachedGroupMetadata,
+        // 1.8.15: nur gesetzte Hooks weiterreichen. `getMessage: undefined` ueberschrieb per
+        // Spread den Baileys-Standard (async () => undefined) -> jede Retry-Anfrage endete mit
+        // "getMessage is not a function" (Empfaenger: dauerhaft "Warte auf diese Nachricht").
+        ...(typeof __oniHooks.getMessage === "function" ? { getMessage: __oniHooks.getMessage } : {}),
+        ...(__oniHooks.msgRetryCounterCache ? { msgRetryCounterCache: __oniHooks.msgRetryCounterCache } : {}),
+        ...(typeof __oniHooks.cachedGroupMetadata === "function" ? { cachedGroupMetadata: __oniHooks.cachedGroupMetadata } : {}),
         maxMsgRetryCount: 5,
         retryRequestDelayMs: 2000,
         // QR-Lebensdauer + Verbindungs-Timeout optional ueber dieselben Hooks.
